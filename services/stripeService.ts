@@ -81,9 +81,10 @@ export class StripeService {
   private async processMobilePayment(sessionUrl: string): Promise<PaymentResult> {
     try {
       // For mobile, use WebBrowser to open Stripe Checkout
+      // The callback will redirect to the Netlify URL which can then deep link back to the app
       const result = await WebBrowser.openAuthSessionAsync(
         sessionUrl,
-        'budgetbuddy://stripe-callback'
+        'https://budget-budddy.netlify.app/stripe-callback'
       );
 
       if (result.type === 'success') {

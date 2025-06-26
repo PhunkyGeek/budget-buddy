@@ -96,7 +96,7 @@ serve(async (req) => {
       )
     }
 
-    // Create Checkout Session with Stripe
+    // Create Checkout Session with Stripe using live Netlify URLs
     const checkoutSessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -110,8 +110,8 @@ serve(async (req) => {
         'line_items[0][price_data][product_data][description]': `Add $${amount.toFixed(2)} to your Budget Buddy wallet`,
         'line_items[0][price_data][unit_amount]': (amount * 100).toString(), // Convert to cents
         'line_items[0][quantity]': '1',
-        success_url: 'budgetbuddy://stripe-callback?session_id={CHECKOUT_SESSION_ID}&status=success',
-        cancel_url: 'budgetbuddy://stripe-callback?status=cancelled',
+        success_url: 'https://budget-budddy.netlify.app/stripe-callback?session_id={CHECKOUT_SESSION_ID}&status=success',
+        cancel_url: 'https://budget-budddy.netlify.app/stripe-callback?status=cancelled',
         customer_email: userProfile.email,
         'metadata[userId]': userId,
         'metadata[purpose]': 'wallet_topup',
