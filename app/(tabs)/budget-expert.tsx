@@ -825,7 +825,7 @@ export default function BudgetExpertScreen() {
             <View style={styles.chatIcon}>
               <MessageCircle size={20} color={theme.primary} />
             </View>
-            <Text style={styles.chatTitle}>AI Assistant</Text>
+            <Text style={styles.chatTitle}>Buddy AI</Text>
             <TouchableOpacity
               style={styles.maximizeButton}
               onPress={handleMaximizeChat}
