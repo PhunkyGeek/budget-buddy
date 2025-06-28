@@ -85,29 +85,29 @@ export default function AccountScreen() {
         Animated.timing(scaleAnim, {
           toValue: 0.95,
           duration: 100,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1.05,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1,
           duration: 100,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]),
       Animated.sequence([
         Animated.timing(shadowAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: false,
+          useNativeDriver: false, // Changed to false for shadow properties
         }),
         Animated.timing(shadowAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: false,
+          useNativeDriver: false, // Changed to false for shadow properties
         }),
       ]),
     ]).start();

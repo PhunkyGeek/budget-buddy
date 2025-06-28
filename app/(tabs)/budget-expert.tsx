@@ -399,6 +399,7 @@ export default function BudgetExpertScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 12,
+      marginTop: 15,
     },
     insightIconContainer: {
       width: 40,

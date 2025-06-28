@@ -158,6 +158,7 @@ export function ExpenseModal({ visible, onClose, onSuccess }: ExpenseModalProps)
     },
     pickerContainer: {
       marginBottom: 16,
+      backgroundColor: theme.background
     },
     submitButton: {
       backgroundColor: theme.primary,

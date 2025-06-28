@@ -8,12 +8,35 @@
     "scheme": "budgetbuddy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo-light.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.budgetbuddy.app"
+      "bundleIdentifier": "com.budgetbuddy.app",
+      "splash": {
+        "image": "./assets/images/logo-light.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/logo-dark.png",
+          "backgroundColor": "#000000"
+        }
+      }
     },
     "android": {
-      "package": "com.budgetbuddy.app"
+      "package": "com.budgetbuddy.app",
+      "splash": {
+        "image": "./assets/images/logo-light.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/logo-dark.png",
+          "backgroundColor": "#000000"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -21,19 +44,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      "expo-font",
+      "expo-router", 
+      "expo-font", 
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "c402288e-e52b-444f-8721-54b132fbac3e"
-      }
     }
   }
 }
