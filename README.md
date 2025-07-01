@@ -1,184 +1,211 @@
-# Budget Buddy - AI-Powered Personal Finance App
+# Budget Buddy — Voice-Activated AI Budget Planner
 
-A comprehensive personal finance management app built with Expo and React Native, featuring AI-powered voice commands, budget tracking, and secure savings management.
+**Budget Buddy** is a cross-platform, voice-activated personal finance app built with **React Native + Expo** that empowers users to **track income**, **manage expenses**, **lock savings**, and **receive smart budgeting advice** — all via **touch or voice**.
 
-## Features
+Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses challenges from:
+**Voice AI**, **Startup**, **Revenue**, and **Deploy** tracks.
 
-### Core Features
-- **Income & Expense Tracking**: Log and categorize your financial transactions
-- **Budget Management**: Set and monitor monthly budgets by category
-- **Transaction History**: View detailed history with filtering and search
-- **Voice Commands**: AI-powered voice interface for hands-free expense logging
-- **Dark/Light Theme**: Automatic theme switching based on system preferences
 
-### Pro Features
-- **AI Budget Expert**: Personalized financial insights powered by Gemini AI
-- **Budget Safe**: Secure digital wallet with savings goals and fund locking
-- **Advanced Analytics**: Detailed spending patterns and forecasting
-- **Priority Support**: Enhanced customer support for Pro subscribers
 
-## Technology Stack
+## 🌐 Live Demo
 
-- **Frontend**: React Native with Expo Router
-- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
-- **AI Services**: 
-  - Google Gemini AI for budget insights
-  - ElevenLabs Conversational AI for voice commands
-- **Payments**: Stripe for secure transactions
-- **Subscriptions**: RevenueCat for in-app purchases
-- **Images**: Unsplash API for category images
+* 🔗 Web: [https://budget-buddy.netlify.app](https://budget-buddy.netlify.app)
+* 📱 Mobile: Compatible with **Expo Go** (Android/iOS)
+* 🎬 [Watch Demo (2 mins)](https://youtu.be/your-demo-video)
 
-## Voice Commands
 
-The app supports natural language voice commands:
 
-- **Add Income**: "Add $2000 from salary to my income"
-- **Add Expense**: "Spend $50 on groceries" or "Deduct $25 for transportation"
-- **View Budget**: "Show my budget"
+## ✨ Features
 
-### Voice Technology
+| Category             | Description                                                        |
+| -------------------- | ------------------------------------------------------------------ |
+| 🎙️ Voice AI         | Add income or expenses, or show budget with voice using ElevenLabs |
+| 📊 Budgeting         | View budget summary, track remaining funds                         |
+| 🧠 AI Expert (Pro)   | Gemini-powered insights, predictions, and mini-chat                |
+| 💼 Budget Safe (Pro) | Stripe wallet with time-lock savings feature                       |
+| 📆 History           | View categorized monthly transaction history                       |
+| 🌓 Themes            | Dark/Light mode with persistent settings                           |
+| 🔒 Secure Auth       | Supabase RLS and auth for private finance data                     |
+| 💎 Pro Features      | Unlock exclusive tools via RevenueCat                              |
+| 🧩 Modular UI        | Reusable components and cards throughout the app                   |
 
-- **Mobile**: ElevenLabs Conversational AI SDK for real-time speech processing
-- **Web**: Simulation mode with sample commands for demonstration
-- **Processing**: Supabase Edge Functions parse and execute voice commands
-
-## Installation
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Expo CLI (`npm install -g @expo/cli`)
-- Supabase account and project
-- ElevenLabs API key (for voice features)
-- Gemini AI API key (for budget insights)
-
-### Environment Setup
-
-Create a `.env` file with the following variables:
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-EXPO_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_api_key
-EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
-EXPO_PUBLIC_UNSPLASH_KEY=your_unsplash_key
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-EXPO_PUBLIC_REVENUECAT_KEY=your_revenuecat_key
-```
-
-### Database Setup
-
-1. Create a new Supabase project
-2. Run the migration files in `/supabase/migrations/` to set up the database schema
-3. Deploy the Edge Functions in `/supabase/functions/`
-
-### Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-
-# Run on specific platforms
-npm run ios
-npm run android
-npm run web
-```
-
-## Project Structure
-
-```
-├── app/                    # Expo Router pages
-│   ├── (tabs)/            # Tab navigation screens
-│   ├── auth/              # Authentication screens
-│   └── _layout.tsx        # Root layout
-├── components/            # Reusable UI components
-├── contexts/              # React contexts (Auth, Theme)
-├── services/              # API services and utilities
-├── supabase/             # Database migrations and functions
-├── types/                # TypeScript type definitions
-└── assets/               # Static assets (images, fonts)
-```
-
-## Key Components
-
-### Voice Integration
-- `VoiceButton.tsx`: Main voice command interface
-- `EnhancedVoiceButton.tsx`: Advanced voice button with AI integration
-- `ConversationalAIProvider.tsx`: ElevenLabs AI context provider
-
-### Financial Features
-- `ExpenseModal.tsx`: Add/edit expense transactions
-- `IncomeModal.tsx`: Add/edit income transactions
-- `ExpenseCard.tsx`: Display expense items with images
-
-### Pro Features
-- `InsightDetailModal.tsx`: Detailed AI budget insights
-- `StripePaymentModal.tsx`: Secure payment processing
-- `WalletHistoryModal.tsx`: Transaction history for Budget Safe
-
-## API Integration
-
-### Supabase Edge Functions
-
-- `parse-voice`: Processes voice commands and updates database
-- `stripe-create-checkout-session`: Creates Stripe payment sessions
-
-### External APIs
-
-- **ElevenLabs**: Real-time voice processing and text-to-speech
-- **Google Gemini**: AI-powered budget analysis and insights
-- **Stripe**: Secure payment processing for wallet top-ups
-- **Unsplash**: Category images for expense visualization
-
-## Deployment
-
-### Web Deployment (Netlify)
-```bash
-# Build for web
-npm run build:web
-
-# Deploy to Netlify
-# Upload the dist/ folder to Netlify
-```
-
-### Mobile Deployment
-```bash
-# Build for app stores
-eas build --platform all
-
-# Submit to stores
-eas submit --platform all
-```
-
-## Security Features
-
-- **Row Level Security (RLS)**: Database-level access control
-- **JWT Authentication**: Secure user sessions with Supabase Auth
-- **API Key Management**: Environment-based configuration
-- **Payment Security**: PCI-compliant processing with Stripe
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions:
-- Email: support@budgetbuddy.app
-- Documentation: [Budget Buddy Docs](https://docs.budgetbuddy.app)
-- Issues: [GitHub Issues](https://github.com/your-repo/budget-buddy/issues)
+> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption.
 
 ---
 
-Built with ❤️ using [Bolt.new](https://bolt.new)
+## Tech Stack
+
+| Layer                   | Tools                                                                   |
+| ----------------------- | ----------------------------------------------------------------------- |
+| **Frontend**            | `React Native`, `Expo`, `TypeScript`, `lucide-react-native`             |
+| **Routing**             | `expo-router`, `react-navigation`                                       |
+| **AI & Voice**          | `ElevenLabs` (TTS), `Google Gemini` (Insights), Supabase Edge Functions |
+| **Authentication & DB** | `Supabase` (Auth, SQL, RLS, Edge Functions)                             |
+| **Payments**            | `RevenueCat` for mobile subscriptions, `Stripe` for web wallet          |
+| **Media**               | `Unsplash API`, `expo-vector-icons`, responsive carousel                |
+| **Deployment**          | `Netlify` (web), `EAS` for mobile builds                                |
+
+
+
+## 📁 Project Structure
+
+```
+├── app/                    # Expo Router screens and tabs
+│   ├── (tabs)/            # Budget views, wallet, insights
+│   ├── auth/              # Auth screens
+│   └── _layout.tsx        # Shared root layout
+├── components/            # UI components (cards, modals, buttons)
+├── contexts/              # Theme, Auth providers
+├── services/              # Supabase, Voice, Gemini, Wallet services
+├── supabase/              # SQL schema, Edge Functions
+├── types/                 # Shared TypeScript interfaces
+└── assets/                # Static files, icons
+```
+
+
+
+## 🔊 Voice AI Examples
+
+| Intent      | Voice Prompt                                                  |
+| ----------- | ------------------------------------------------------------- |
+| Add Income  | "Add \$2000 from salary to my income"                         |
+| Add Expense | "Spend \$50 on groceries" or "Deduct \$25 for transportation" |
+| Show Budget | "Show my budget"                                              |
+
+➡️ Voice processed using `parse-voice` (Supabase Edge Function) → triggers action.
+
+---
+
+## 💎 Pro Features (RevenueCat)
+
+Upgrade to unlock:
+
+* **AI Budget Expert**
+  Get personalized Gemini-powered insights, predictions, and mini-chat.
+
+* **Budget Safe**
+  Add money via Stripe wallet, withdraw or lock funds for specific savings goals.
+
+* **Advanced Analytics**
+  Visual forecasting, categorized breakdowns, and saving patterns.
+
+* **Priority Support**
+  Faster responses and dedicated help for Pro users.
+
+---
+
+## 🛠️ Setup & Installation
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/yourusername/budget-buddy.git
+cd budget-buddy
+npm install
+```
+
+### 2. Add `.env` File
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+EXPO_PUBLIC_ELEVENLABS_API_KEY=your-elevenlabs-key
+EXPO_PUBLIC_GEMINI_API_KEY=your-gemini-key
+EXPO_PUBLIC_UNSPLASH_KEY=your-unsplash-key
+EXPO_PUBLIC_REVENUECAT_KEY=your-revenuecat-key
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-pk
+```
+
+### 3. Supabase Setup
+
+* Create a Supabase project.
+* Run SQL schema in `/supabase/migrations/`.
+* Deploy Edge Functions: `parse-voice`, `stripe-create-checkout-session`.
+
+### 4. Start App
+
+```bash
+# Start dev server
+npx expo start
+
+# Or run platform-specific
+npm run web
+npm run ios
+npm run android
+```
+
+---
+
+## ⚙️ Deployment
+
+### Web (Netlify)
+
+```bash
+npx expo export:web
+```
+
+Then upload the `/dist` folder to Netlify.
+
+### Mobile (EAS Build)
+
+```bash
+eas build --platform all
+eas submit --platform all
+```
+
+---
+
+## 🔒 Security Highlights
+
+* **Supabase RLS** for secure user-level data access
+* JWT Auth and session tokens
+* All payments via PCI-compliant Stripe
+* No sensitive data stored on-device
+
+---
+
+## 🧩 Key Components
+
+| Component                 | Purpose                                |
+| ------------------------- | -------------------------------------- |
+| `VoiceService.ts`         | Processes speech commands (web/mobile) |
+| `EnhancedVoiceButton.tsx` | TTS + AI-driven interaction            |
+| `InsightDetailModal.tsx`  | Gemini AI prediction results           |
+| `StripePaymentModal.tsx`  | Budget Safe wallet integration         |
+| `WalletHistoryModal.tsx`  | Past wallet transactions               |
+
+
+
+## 🤝 Contributing
+
+1. Fork this repo
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+
+
+## 📄 License
+
+MIT License – see [LICENSE](LICENSE)
+
+
+
+## 🙋 Support
+
+* Email: [support@budgetbuddy.app](mailto:support@budgetbuddy.app)
+* Docs: [https://docs.budgetbuddy.app](https://docs.budgetbuddy.app)
+* Issues: [GitHub Issues](https://github.com/your-repo/budget-buddy/issues)
+
+
+
+## 🏷️ Tags
+
+`#VoiceAI` `#GeminiAI` `#ReactNative` `#Supabase` `#StripeWallet` `#FinanceApp` `#BoltNew` `#RevenueCat` `#TTS` `#AIChat`
+
+---
+
+## 🛡️ Badge
+
+Proudly built with ❤️ using ⚡ [Bolt.new](https://bolt.new)
