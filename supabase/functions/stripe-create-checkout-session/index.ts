@@ -18,6 +18,7 @@ interface CheckoutSessionRequest {
   amount: number
   currency?: string
   userId: string
+  callbackOrigin: string
 }
 
 serve(async (req) => {
@@ -27,13 +28,13 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = 'usd', userId }: CheckoutSessionRequest = await req.json()
+    const { amount, currency = 'usd', userId, callbackOrigin }: CheckoutSessionRequest = await req.json()
 
-    if (!amount || !userId || amount <= 0) {
+    if (!amount || !userId || amount <= 0 || !callbackOrigin) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Invalid amount or userId' 
+          error: 'Invalid amount, userId, or callbackOrigin' 
         }),
         { 
           status: 400, 
@@ -96,7 +97,17 @@ serve(async (req) => {
       )
     }
 
-    // Create Checkout Session with Stripe using live Netlify URLs
+    // Construct dynamic callback URLs using the provided origin
+    const successUrl = `${callbackOrigin}/stripe-callback?session_id={CHECKOUT_SESSION_ID}&status=success`
+    const cancelUrl = `${callbackOrigin}/stripe-callback?status=cancelled`
+
+    console.log('Creating Stripe checkout session with URLs:', {
+      successUrl,
+      cancelUrl,
+      callbackOrigin
+    })
+
+    // Create Checkout Session with Stripe using dynamic URLs
     const checkoutSessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -110,8 +121,8 @@ serve(async (req) => {
         'line_items[0][price_data][product_data][description]': `Add $${amount.toFixed(2)} to your Budget Buddy wallet`,
         'line_items[0][price_data][unit_amount]': (amount * 100).toString(), // Convert to cents
         'line_items[0][quantity]': '1',
-        success_url: 'https://budget-budddy.netlify.app/stripe-callback?session_id={CHECKOUT_SESSION_ID}&status=success',
-        cancel_url: 'https://budget-budddy.netlify.app/stripe-callback?status=cancelled',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         customer_email: userProfile.email,
         'metadata[userId]': userId,
         'metadata[purpose]': 'wallet_topup',

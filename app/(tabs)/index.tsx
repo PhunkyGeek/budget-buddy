@@ -38,6 +38,8 @@ import {
 } from '@/services/supabaseService';
 import { unsplashService } from '@/services/unsplashService';
 import { VoiceButton } from '@/components/VoiceButton';
+import { ConversationalAIProvider } from '@/components/ConversationalAIProvider';
+import { VoiceCommandSuccessProvider } from '@/contexts/VoiceCommandSuccessContext';
 import { TutorialModal } from '@/components/TutorialModal';
 import { IncomeModal } from '@/components/IncomeModal';
 import { ExpenseModal } from '@/components/ExpenseModal';
@@ -500,291 +502,293 @@ export default function HomeScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={[theme.primary, theme.secondary]}
-        style={styles.headerGradient}
-      >
-        <View style={styles.headerTop}>
-          <Text style={styles.greeting}>
-            Hello, {profile?.first_name || 'User'}
-          </Text>
-          <View style={styles.headerButtons}>
-            <VoiceButton
-              onSuccess={loadData}
-            />
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => setShowAddOptionsModal(true)}
-            >
-              <Plus size={24} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Text style={styles.totalIncomeTitle}>Total Income</Text>
-        <Text style={styles.totalIncomeAmount}>${monthlyIncome.toFixed(2)}</Text>
-        
-        <View style={styles.statsRow}>
-          <TouchableOpacity style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Wallet size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.statValue}>${monthlyIncome.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Monthly Income</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <DollarSign size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.statValue}>${monthlyExpenses.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Total Expenses</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <PiggyBank size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.statValue}>${remainingBudget.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Remaining Budget</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-      >
-        {/* Today's Expenses - Now with horizontal carousel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Expenses</Text>
-            <TouchableOpacity 
-              style={styles.seeAllButton}
-              onPress={handleSeeAllTodayExpenses}
-            >
-              <Text style={styles.seeAllText}>See All</Text>
-              <ChevronRight size={16} color={theme.primary} />
-            </TouchableOpacity>
-          </View>
-
-          {todayExpenses.length > 0 ? (
-            <>
-              <View style={styles.expensesCarouselContainer}>
-                <ScrollView
-                  ref={expensesScrollViewRef}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.expensesScrollView}
-                  contentContainerStyle={styles.expensesScrollContent}
-                  decelerationRate="fast"
-                  snapToInterval={276} // Card width + margin
-                  snapToAlignment="start"
-                >
-                  {todayExpenses.map((expense) => (
-                    <View key={expense.id} style={styles.expenseCard}>
-                      <Image
-                        source={{ uri: expenseImages[expense.id] }}
-                        style={styles.expenseImage}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.expenseDetails}>
-                        <Text style={styles.expenseCategory}>
-                          {expense.categories?.name || 'Unknown'}
-                        </Text>
-                        <Text style={styles.expenseAmount}>
-                          ${expense.amount.toFixed(2)}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </ScrollView>
-                
-                {todayExpenses.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.scrollButton}
-                    onPress={handleScrollRight}
-                  >
-                    <ChevronRight size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.todayBanner}>
-                <Text style={styles.todayBannerText}>
-                  Today's Total: <Text style={styles.todayBannerHighlight}>${todayTotal.toFixed(2)}</Text>
-                  {'\n'}
-                  Current Remaining: <Text style={styles.todayBannerHighlight}>${(remainingBudget - todayTotal).toFixed(2)}</Text>
-                </Text>
-              </View>
-            </>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No expenses today</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setShowExpenseModal(true)}
-              >
-                <Text style={styles.addButtonText}>Add First Expense</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => setShowExpenseModal(true)}
-            >
-              <View style={styles.quickActionIcon}>
-                <Plus size={32} color={theme.primary} />
-              </View>
-              <Text style={styles.quickActionTitle}>Create New Expense</Text>
-              <Text style={styles.quickActionSubtitle}>Add expense quickly</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => router.push('/history')}
-            >
-              <View style={styles.quickActionIcon}>
-                <History size={32} color={theme.primary} />
-              </View>
-              <Text style={styles.quickActionTitle}>View History</Text>
-              <Text style={styles.quickActionSubtitle}>See all transactions</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.quickActionCard}>
-              <View style={styles.quickActionIcon}>
-                <Mic size={32} color={theme.primary} />
-              </View>
-              <Text style={styles.quickActionTitle}>Voice Buddy</Text>
-              <Text style={styles.quickActionSubtitle}>Talk to add expenses</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.quickActionCard, styles.quickActionCardPro]}
-              onPress={() => router.push('/budget-expert')}
-            >
-              <View style={styles.proBadge}>
-                <Text style={styles.proBadgeText}>Pro</Text>
-              </View>
-              <View style={styles.quickActionIcon}>
-                <GraduationCap size={32} color={theme.secondary} />
-              </View>
-              <Text style={styles.quickActionTitle}>Budget Expert</Text>
-              <Text style={styles.quickActionSubtitle}>AI budget advisor</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.quickActionCard, styles.quickActionCardPro]}
-              onPress={() => router.push('/budget-safe')}
-            >
-              <View style={styles.proBadge}>
-                <Text style={styles.proBadgeText}>Pro</Text>
-              </View>
-              <View style={styles.quickActionIcon}>
-                <Shield size={32} color={theme.secondary} />
-              </View>
-              <Text style={styles.quickActionTitle}>Budget Safe</Text>
-              <Text style={styles.quickActionSubtitle}>Secure savings plan</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => setShowIncomeModal(true)}
-            >
-              <View style={styles.quickActionIcon}>
-                <TrendingUp size={32} color={theme.success} />
-              </View>
-              <Text style={styles.quickActionTitle}>Add Income</Text>
-              <Text style={styles.quickActionSubtitle}>Record new income</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Add Options Modal */}
-      <Modal
-        visible={showAddOptionsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAddOptionsModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.addOptionsOverlay}
-          activeOpacity={1}
-          onPress={() => setShowAddOptionsModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.addOptionsContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+    <VoiceCommandSuccessProvider onSuccess={loadData}>
+      <ConversationalAIProvider>
+        <SafeAreaView style={styles.container}>
+          <LinearGradient
+            colors={[theme.primary, theme.secondary]}
+            style={styles.headerGradient}
           >
-            <View style={styles.addOptionsHeader}>
-              <Text style={styles.addOptionsTitle}>Add Transaction</Text>
-              <TouchableOpacity
-                style={styles.closeOptionsButton}
-                onPress={() => setShowAddOptionsModal(false)}
-              >
-                <X size={24} color={theme.textSecondary} />
-              </TouchableOpacity>
+            <View style={styles.headerTop}>
+              <Text style={styles.greeting}>
+                Hello, {profile?.first_name || 'User'}
+              </Text>
+              <View style={styles.headerButtons}>
+                <VoiceButton />
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={() => setShowAddOptionsModal(true)}
+                >
+                  <Plus size={24} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
             </View>
 
+            <Text style={styles.totalIncomeTitle}>Total Income</Text>
+            <Text style={styles.totalIncomeAmount}>${monthlyIncome.toFixed(2)}</Text>
+            
+            <View style={styles.statsRow}>
+              <TouchableOpacity style={styles.statCard}>
+                <View style={styles.statIcon}>
+                  <Wallet size={24} color="#ffffff" />
+                </View>
+                <Text style={styles.statValue}>${monthlyIncome.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Monthly Income</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.statCard}>
+                <View style={styles.statIcon}>
+                  <DollarSign size={24} color="#ffffff" />
+                </View>
+                <Text style={styles.statValue}>${monthlyExpenses.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Total Expenses</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.statCard}>
+                <View style={styles.statIcon}>
+                  <PiggyBank size={24} color="#ffffff" />
+                </View>
+                <Text style={styles.statValue}>${remainingBudget.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Remaining Budget</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+
+          <ScrollView 
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          >
+            {/* Today's Expenses - Now with horizontal carousel */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Today's Expenses</Text>
+                <TouchableOpacity 
+                  style={styles.seeAllButton}
+                  onPress={handleSeeAllTodayExpenses}
+                >
+                  <Text style={styles.seeAllText}>See All</Text>
+                  <ChevronRight size={16} color={theme.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {todayExpenses.length > 0 ? (
+                <>
+                  <View style={styles.expensesCarouselContainer}>
+                    <ScrollView
+                      ref={expensesScrollViewRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.expensesScrollView}
+                      contentContainerStyle={styles.expensesScrollContent}
+                      decelerationRate="fast"
+                      snapToInterval={276} // Card width + margin
+                      snapToAlignment="start"
+                    >
+                      {todayExpenses.map((expense) => (
+                        <View key={expense.id} style={styles.expenseCard}>
+                          <Image
+                            source={{ uri: expenseImages[expense.id] }}
+                            style={styles.expenseImage}
+                            resizeMode="cover"
+                          />
+                          <View style={styles.expenseDetails}>
+                            <Text style={styles.expenseCategory}>
+                              {expense.categories?.name || 'Unknown'}
+                            </Text>
+                            <Text style={styles.expenseAmount}>
+                              ${expense.amount.toFixed(2)}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                    </ScrollView>
+                    
+                    {todayExpenses.length > 1 && (
+                      <TouchableOpacity
+                        style={styles.scrollButton}
+                        onPress={handleScrollRight}
+                      >
+                        <ChevronRight size={20} color="#ffffff" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <View style={styles.todayBanner}>
+                    <Text style={styles.todayBannerText}>
+                      Today's Total: <Text style={styles.todayBannerHighlight}>${todayTotal.toFixed(2)}</Text>
+                      {'\n'}
+                      Current Remaining: <Text style={styles.todayBannerHighlight}>${(remainingBudget - todayTotal).toFixed(2)}</Text>
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No expenses today</Text>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => setShowExpenseModal(true)}
+                  >
+                    <Text style={styles.addButtonText}>Add First Expense</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              <View style={styles.quickActionsGrid}>
+                <TouchableOpacity
+                  style={styles.quickActionCard}
+                  onPress={() => setShowExpenseModal(true)}
+                >
+                  <View style={styles.quickActionIcon}>
+                    <Plus size={32} color={theme.primary} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>Create New Expense</Text>
+                  <Text style={styles.quickActionSubtitle}>Add expense quickly</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.quickActionCard}
+                  onPress={() => router.push('/history')}
+                >
+                  <View style={styles.quickActionIcon}>
+                    <History size={32} color={theme.primary} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>View History</Text>
+                  <Text style={styles.quickActionSubtitle}>See all transactions</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.quickActionCard}>
+                  <View style={styles.quickActionIcon}>
+                    <Mic size={32} color={theme.primary} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>Voice Buddy</Text>
+                  <Text style={styles.quickActionSubtitle}>Talk to add expenses</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.quickActionCard, styles.quickActionCardPro]}
+                  onPress={() => router.push('/budget-expert')}
+                >
+                  <View style={styles.proBadge}>
+                    <Text style={styles.proBadgeText}>Pro</Text>
+                  </View>
+                  <View style={styles.quickActionIcon}>
+                    <GraduationCap size={32} color={theme.secondary} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>Budget Expert</Text>
+                  <Text style={styles.quickActionSubtitle}>AI budget advisor</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.quickActionCard, styles.quickActionCardPro]}
+                  onPress={() => router.push('/budget-safe')}
+                >
+                  <View style={styles.proBadge}>
+                    <Text style={styles.proBadgeText}>Pro</Text>
+                  </View>
+                  <View style={styles.quickActionIcon}>
+                    <Shield size={32} color={theme.secondary} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>Budget Safe</Text>
+                  <Text style={styles.quickActionSubtitle}>Secure savings plan</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.quickActionCard}
+                  onPress={() => setShowIncomeModal(true)}
+                >
+                  <View style={styles.quickActionIcon}>
+                    <TrendingUp size={32} color={theme.success} />
+                  </View>
+                  <Text style={styles.quickActionTitle}>Add Income</Text>
+                  <Text style={styles.quickActionSubtitle}>Record new income</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Add Options Modal */}
+          <Modal
+            visible={showAddOptionsModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowAddOptionsModal(false)}
+          >
             <TouchableOpacity
-              style={styles.addOptionButton}
-              onPress={handleAddIncome}
+              style={styles.addOptionsOverlay}
+              activeOpacity={1}
+              onPress={() => setShowAddOptionsModal(false)}
             >
-              <View style={[styles.addOptionIcon, styles.addIncomeIcon]}>
-                <TrendingUp size={24} color={theme.success} />
-              </View>
-              <View style={styles.addOptionContent}>
-                <Text style={styles.addOptionButtonText}>Add Income</Text>
-                <Text style={styles.addOptionSubtext}>Record money you've received</Text>
-              </View>
-              <ChevronRight size={20} color={theme.textSecondary} />
+              <TouchableOpacity
+                style={styles.addOptionsContainer}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <View style={styles.addOptionsHeader}>
+                  <Text style={styles.addOptionsTitle}>Add Transaction</Text>
+                  <TouchableOpacity
+                    style={styles.closeOptionsButton}
+                    onPress={() => setShowAddOptionsModal(false)}
+                  >
+                    <X size={24} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.addOptionButton}
+                  onPress={handleAddIncome}
+                >
+                  <View style={[styles.addOptionIcon, styles.addIncomeIcon]}>
+                    <TrendingUp size={24} color={theme.success} />
+                  </View>
+                  <View style={styles.addOptionContent}>
+                    <Text style={styles.addOptionButtonText}>Add Income</Text>
+                    <Text style={styles.addOptionSubtext}>Record money you've received</Text>
+                  </View>
+                  <ChevronRight size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.addOptionButton}
+                  onPress={handleAddExpense}
+                >
+                  <View style={[styles.addOptionIcon, styles.addExpenseIcon]}>
+                    <TrendingDown size={24} color={theme.error} />
+                  </View>
+                  <View style={styles.addOptionContent}>
+                    <Text style={styles.addOptionButtonText}>Add Expense</Text>
+                    <Text style={styles.addOptionSubtext}>Record money you've spent</Text>
+                  </View>
+                  <ChevronRight size={20} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </TouchableOpacity>
             </TouchableOpacity>
+          </Modal>
 
-            <TouchableOpacity
-              style={styles.addOptionButton}
-              onPress={handleAddExpense}
-            >
-              <View style={[styles.addOptionIcon, styles.addExpenseIcon]}>
-                <TrendingDown size={24} color={theme.error} />
-              </View>
-              <View style={styles.addOptionContent}>
-                <Text style={styles.addOptionButtonText}>Add Expense</Text>
-                <Text style={styles.addOptionSubtext}>Record money you've spent</Text>
-              </View>
-              <ChevronRight size={20} color={theme.textSecondary} />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+          {/* Existing Modals */}
+          <TutorialModal
+            visible={showTutorial}
+            onClose={handleTutorialClose}
+          />
 
-      {/* Existing Modals */}
-      <TutorialModal
-        visible={showTutorial}
-        onClose={handleTutorialClose}
-      />
+          <IncomeModal
+            visible={showIncomeModal}
+            onClose={() => setShowIncomeModal(false)}
+            onSuccess={loadData}
+          />
 
-      <IncomeModal
-        visible={showIncomeModal}
-        onClose={() => setShowIncomeModal(false)}
-        onSuccess={loadData}
-      />
-
-      <ExpenseModal
-        visible={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
-        onSuccess={loadData}
-      />
-    </SafeAreaView>
+          <ExpenseModal
+            visible={showExpenseModal}
+            onClose={() => setShowExpenseModal(false)}
+            onSuccess={loadData}
+          />
+        </SafeAreaView>
+      </ConversationalAIProvider>
+    </VoiceCommandSuccessProvider>
   );
 }

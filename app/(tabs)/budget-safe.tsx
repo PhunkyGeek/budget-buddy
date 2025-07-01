@@ -290,6 +290,16 @@ export default function BudgetSafeScreen() {
     }
   };
 
+  // Determine callback origin for Stripe
+  const getCallbackOrigin = () => {
+    if (Platform.OS === 'web') {
+      return typeof window !== 'undefined' ? window.location.origin : 'https://budget-budddy.netlify.app';
+    } else {
+      // For mobile, always use the production URL as it needs to be web-accessible
+      return 'https://budget-budddy.netlify.app';
+    }
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -887,6 +897,7 @@ export default function BudgetSafeScreen() {
         amount={parseFloat(amount) || 0}
         userId={user?.id || ''}
         onSuccess={handleStripeSuccess}
+        callbackOrigin={getCallbackOrigin()}
       />
 
       {/* Withdraw Modal */}

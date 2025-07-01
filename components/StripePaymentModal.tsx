@@ -20,6 +20,7 @@ interface StripePaymentModalProps {
   amount: number;
   userId: string;
   onSuccess: () => void;
+  callbackOrigin?: string;
 }
 
 export function StripePaymentModal({ 
@@ -27,7 +28,8 @@ export function StripePaymentModal({
   onClose, 
   amount, 
   userId, 
-  onSuccess 
+  onSuccess,
+  callbackOrigin 
 }: StripePaymentModalProps) {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -62,8 +64,8 @@ export function StripePaymentModal({
     setLoading(true);
 
     try {
-      // Step 1: Create checkout session
-      const checkoutResponse = await stripeService.createCheckoutSession(amount, userId);
+      // Step 1: Create checkout session with dynamic callback origin
+      const checkoutResponse = await stripeService.createCheckoutSession(amount, userId, callbackOrigin);
       
       if (!checkoutResponse.success || !checkoutResponse.sessionUrl) {
         throw new Error(checkoutResponse.error || 'Failed to create checkout session');

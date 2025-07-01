@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { TouchableOpacity, StyleSheet, Animated, Platform, Alert } from 'react-native';
-import { Mic, MicOff } from 'lucide-react-native';
-import { Audio } from 'expo-av';
+import { Mic, MicOff, Loader } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConversationalAI } from '@/components/ConversationalAIProvider';
 import { voiceService } from '@/services/voiceService';
 
 interface VoiceButtonProps {
@@ -15,8 +15,16 @@ interface VoiceButtonProps {
 export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButtonProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [isListening, setIsListening] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | undefined>();
+  const { 
+    isAvailable, 
+    isConnected, 
+    isProcessing, 
+    isRecording,
+    startConversation, 
+    endConversation, 
+    startRecording, 
+    stopRecording 
+  } = useConversationalAI();
   const [scaleAnim] = useState(new Animated.Value(1));
 
   const handlePress = async () => {
@@ -42,160 +50,82 @@ export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButto
       }),
     ]).start();
 
-    if (Platform.OS !== 'web') {
-      // Mobile platform - use actual recording
-      if (!isListening) {
+    if (Platform.OS === 'web') {
+      // Web platform - use ElevenLabs SDK or simulation
+      if (isAvailable && !isConnected) {
+        try {
+          await startConversation();
+        } catch (error) {
+          console.error('Failed to start conversation:', error);
+          Alert.alert(
+            'Voice Error',
+            'Failed to start voice conversation. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else if (isConnected) {
+        try {
+          await endConversation();
+        } catch (error) {
+          console.error('Failed to end conversation:', error);
+        }
+      } else {
+        // Fallback to simulation for web
+        if (!isProcessing) {
+          try {
+            const simulatedText = await voiceService.simulateSpeechToText();
+            const response = await voiceService.processVoiceCommand(simulatedText, user.id);
+            
+            if (response.success) {
+              Alert.alert(
+                'Voice Command Processed',
+                `Command: "${simulatedText}"\n\n${response.message}`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      onSuccess?.();
+                    }
+                  }
+                ]
+              );
+            } else {
+              Alert.alert(
+                'Voice Command Failed',
+                response.message,
+                [{ text: 'OK' }]
+              );
+            }
+          } catch (error) {
+            console.error('Voice command error:', error);
+            Alert.alert(
+              'Voice Command Error',
+              'Sorry, there was an error processing your voice command. Please try again.',
+              [{ text: 'OK' }]
+            );
+          }
+        }
+      }
+    } else {
+      // Mobile platform - use expo-av for recording
+      if (!isRecording) {
         await startRecording();
       } else {
         await stopRecording();
       }
-    } else {
-      // Web platform - use simulation
-      if (!isListening) {
-        setIsListening(true);
-        try {
-          const simulatedText = await voiceService.simulateSpeechToText();
-          const response = await voiceService.processVoiceCommand(simulatedText, null, user.id);
-          
-          setIsListening(false);
-
-          if (response.success) {
-            Alert.alert(
-              'Voice Command Processed',
-              `Command: "${simulatedText}"\n\n${response.message}`,
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    onSuccess?.();
-                  }
-                }
-              ]
-            );
-          } else {
-            Alert.alert(
-              'Voice Command Failed',
-              response.message,
-              [{ text: 'OK' }]
-            );
-          }
-        } catch (error) {
-          setIsListening(false);
-          console.error('Voice command error:', error);
-          Alert.alert(
-            'Voice Command Error',
-            'Sorry, there was an error processing your voice command. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
-      }
     }
   };
 
-  const startRecording = async () => {
-    try {
-      // Request microphone permissions
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Microphone access is required for voice commands.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      // Configure audio mode for recording
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-
-      console.log('Starting recording...');
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(newRecording);
-      setIsListening(true);
-      console.log('Recording started');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert(
-        'Recording Error',
-        'Failed to start recording. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
+  const getButtonColor = () => {
+    if (isProcessing) return theme.warning;
+    if (isRecording || isConnected) return theme.error;
+    return theme.primary;
   };
 
-  const stopRecording = async () => {
-    if (!recording) return;
-
-    try {
-      console.log('Stopping recording...');
-      setIsListening(false);
-      
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(undefined);
-      
-      console.log('Recording stopped, URI:', uri);
-
-      if (uri) {
-        // Process the recorded audio
-        try {
-          const response = await voiceService.processVoiceCommand(null, uri, user!.id);
-          
-          if (response.success) {
-            Alert.alert(
-              'Voice Command Processed',
-              response.message,
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    onSuccess?.();
-                  }
-                }
-              ]
-            );
-          } else {
-            Alert.alert(
-              'Voice Command Failed',
-              response.message,
-              [{ text: 'OK' }]
-            );
-          }
-        } catch (error) {
-          console.error('Voice command processing error:', error);
-          Alert.alert(
-            'Voice Command Error',
-            'Sorry, there was an error processing your voice command. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
-      }
-
-      // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      setIsListening(false);
-      setRecording(undefined);
-      Alert.alert(
-        'Recording Error',
-        'Failed to stop recording. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
+  const getIcon = () => {
+    if (isProcessing) return <Loader size={24} color="#ffffff" />;
+    if (isRecording || isConnected) return <MicOff size={24} color="#ffffff" />;
+    return <Mic size={24} color="#ffffff" />;
   };
 
   const styles = StyleSheet.create({
@@ -203,7 +133,7 @@ export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButto
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: isListening ? theme.error : theme.primary,
+      backgroundColor: getButtonColor(),
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: theme.text,
@@ -213,24 +143,17 @@ export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButto
       elevation: 4,
       opacity: disabled ? 0.6 : 1,
     },
-    buttonListening: {
-      backgroundColor: theme.error,
-    },
   });
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity
-        style={[styles.button, isListening && styles.buttonListening]}
+        style={styles.button}
         onPress={handlePress}
-        disabled={disabled || (Platform.OS !== 'web' && isListening && !recording)}
+        disabled={disabled || isProcessing}
         activeOpacity={0.8}
       >
-        {isListening ? (
-          <MicOff size={24} color="#ffffff" />
-        ) : (
-          <Mic size={24} color="#ffffff" />
-        )}
+        {getIcon()}
       </TouchableOpacity>
     </Animated.View>
   );

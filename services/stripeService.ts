@@ -22,13 +22,25 @@ export class StripeService {
     this.publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
   }
 
-  async createCheckoutSession(amount: number, userId: string): Promise<CheckoutSessionResponse> {
+  async createCheckoutSession(amount: number, userId: string, callbackOrigin?: string): Promise<CheckoutSessionResponse> {
     try {
+      // Determine callback origin if not provided
+      let origin = callbackOrigin;
+      if (!origin) {
+        if (Platform.OS === 'web') {
+          origin = typeof window !== 'undefined' ? window.location.origin : 'https://budget-budddy.netlify.app';
+        } else {
+          // For mobile, always use the production URL as it needs to be web-accessible
+          origin = 'https://budget-budddy.netlify.app';
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('stripe-create-checkout-session', {
         body: {
           amount,
           currency: 'usd',
-          userId
+          userId,
+          callbackOrigin: origin
         }
       });
 
