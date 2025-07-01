@@ -9,9 +9,9 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 
 ## 🌐 Live Demo
 
-* 🔗 Web: [https://budget-buddy.netlify.app](https://budget-buddy.netlify.app)
+* 🔗 Web: [https://budget-budddy.netlify.app](https://budget-budddy.netlify.app)
 * 📱 Mobile: Compatible with **Expo Go** (Android/iOS)
-* 🎬 [Watch Demo (2 mins)](https://youtu.be/your-demo-video)
+* 🎬 [Watch Demo (2 mins)](https://youtu.be/yTNayKR5Igg)
 
 
 
@@ -29,7 +29,7 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 | 💎 Pro Features      | Unlock exclusive tools via RevenueCat                              |
 | 🧩 Modular UI        | Reusable components and cards throughout the app                   |
 
-> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption.
+> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption (I didn't get the Get 3 months of ElevenLabs Creator Tier free which includes 100k credits/month, pro voice cloning due IP address issues).
 
 ---
 
@@ -50,7 +50,7 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 ## 📁 Project Structure
 
 ```
-├── app/                    # Expo Router screens and tabs
+├── app/                   # Expo Router screens and tabs
 │   ├── (tabs)/            # Budget views, wallet, insights
 │   ├── auth/              # Auth screens
 │   └── _layout.tsx        # Shared root layout
@@ -194,9 +194,9 @@ MIT License – see [LICENSE](LICENSE)
 
 ## 🙋 Support
 
-* Email: [support@budgetbuddy.app](mailto:support@budgetbuddy.app)
-* Docs: [https://docs.budgetbuddy.app](https://docs.budgetbuddy.app)
-* Issues: [GitHub Issues](https://github.com/your-repo/budget-buddy/issues)
+* Email: [support@budgetbudddy.app](mailto:support@budgetbudddy.app)
+* Docs: [https://docs.budgetbuddy.app](https://docs.budgetbudddy.app)
+* Issues: [GitHub Issues](https://github.com/PhunkyGeek/budget-buddy/issues)
 
 
 
