@@ -88,7 +88,7 @@ export default function BudgetSafeScreen() {
 
   const handleUnlockPro = async () => {
     try {
-      await revenueCatService.openPaywall();
+      await revenueCatService.openPaywall(user?.id);
     } catch (error) {
       console.error('Error opening paywall:', error);
     }

@@ -19,7 +19,7 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 
 | Category             | Description                                                        |
 | -------------------- | ------------------------------------------------------------------ |
-| 🎙️ Voice AI         | Add income or expenses, or show budget with voice using ElevenLabs |
+| 🎙️ Voice AI          | Add income or expenses, or show budget with voice using ElevenLabs |
 | 📊 Budgeting         | View budget summary, track remaining funds                         |
 | 🧠 AI Expert (Pro)   | Gemini-powered insights, predictions, and mini-chat                |
 | 💼 Budget Safe (Pro) | Stripe wallet with time-lock savings feature                       |
@@ -29,7 +29,7 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 | 💎 Pro Features      | Unlock exclusive tools via RevenueCat                              |
 | 🧩 Modular UI        | Reusable components and cards throughout the app                   |
 
-> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption (I didn't get the Get 3 months of ElevenLabs Creator Tier free which includes 100k credits/month, pro voice cloning due IP address issues).
+> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption (I didn't get the Get 3 months of ElevenLabs Creator Tier free which includes 100k credits/month, pro voice cloning due IP address issues) So I had to use multiple free tier accounts for testing. Second elevenLabs account email: thesurgemedia22@gmail.com
 
 ---
 

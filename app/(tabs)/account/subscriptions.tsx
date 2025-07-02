@@ -13,11 +13,11 @@ import { revenueCatService } from '@/services/revenueCatService';
 
 export default function SubscriptionsScreen() {
   const { theme } = useTheme();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
 
   const handleUnlockPro = async () => {
     try {
-      await revenueCatService.openPaywall();
+      await revenueCatService.openPaywall(user?.id);
     } catch (error) {
       console.error('Error opening paywall:', error);
     }
@@ -25,7 +25,7 @@ export default function SubscriptionsScreen() {
 
   const handleManageSubscription = async () => {
     try {
-      await revenueCatService.openPaywall();
+      await revenueCatService.openPaywall(user?.id);
     } catch (error) {
       console.error('Error opening subscription management:', error);
     }

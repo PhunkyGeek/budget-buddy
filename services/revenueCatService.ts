@@ -4,6 +4,7 @@ export interface RevenueCatConfig {
   apiKey: string;
   entitlementId: string;
   productId: string;
+  sandboxUrl: string;
 }
 
 export class RevenueCatService {
@@ -15,6 +16,7 @@ export class RevenueCatService {
       apiKey: process.env.EXPO_PUBLIC_REVENUECAT_KEY || '',
       entitlementId: 'pro',
       productId: 'Budget_Buddy_Pro_Annual',
+      sandboxUrl: 'https://pay.rev.cat/sandbox/xlzleojzacamrxqw/',
     };
     
     // Check if we're in a native environment where RevenueCat can work
@@ -32,7 +34,58 @@ export class RevenueCatService {
     }
   }
 
-  async openPaywall(): Promise<void> {
+  async openPaywall(userId?: string): Promise<void> {
+    // Web platform - use RevenueCat web checkout
+    if (Platform.OS === 'web') {
+      if (!userId) {
+        Alert.alert(
+          'User Required',
+          'A user ID is required for web checkout. Please ensure you are logged in.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      try {
+        const checkoutUrl = `${this.config.sandboxUrl}${userId}`;
+        
+        Alert.alert(
+          'Upgrade to Pro',
+          'You will be redirected to RevenueCat\'s secure checkout page to complete your Pro upgrade.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            },
+            {
+              text: 'Continue',
+              onPress: async () => {
+                try {
+                  await Linking.openURL(checkoutUrl);
+                } catch (error) {
+                  console.error('Error opening checkout URL:', error);
+                  Alert.alert(
+                    'Error',
+                    'Unable to open checkout page. Please try again later.',
+                    [{ text: 'OK' }]
+                  );
+                }
+              }
+            }
+          ]
+        );
+      } catch (error) {
+        console.error('Error preparing web checkout:', error);
+        Alert.alert(
+          'Error',
+          'Unable to prepare checkout. Please try again later.',
+          [{ text: 'OK' }]
+        );
+      }
+      return;
+    }
+
+    // Native platforms
     if (!this.isNativeAvailable) {
       this.showNativeRequiredAlert();
       return;
@@ -96,6 +149,15 @@ export class RevenueCatService {
   }
 
   async restorePurchases(): Promise<void> {
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Web Platform',
+        'Purchase restoration is handled automatically on web. If you have an active subscription, it should be reflected in your account.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!this.isNativeAvailable) {
       this.showNativeRequiredAlert();
       return;
@@ -130,6 +192,12 @@ export class RevenueCatService {
   }
 
   async checkSubscriptionStatus(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      // For web, we can't check subscription status directly
+      // This would need to be handled by your backend
+      return false;
+    }
+
     if (!this.isNativeAvailable) {
       return false;
     }
@@ -146,7 +214,13 @@ export class RevenueCatService {
   }
 
   // Alternative method to present paywall for specific offering
-  async openPaywallForOffering(offeringIdentifier?: string): Promise<void> {
+  async openPaywallForOffering(offeringIdentifier?: string, userId?: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      // For web, redirect to the same checkout URL regardless of offering
+      await this.openPaywall(userId);
+      return;
+    }
+
     if (!this.isNativeAvailable) {
       this.showNativeRequiredAlert();
       return;
@@ -221,7 +295,13 @@ export class RevenueCatService {
   }
 
   // Method to present paywall only if user doesn't have entitlement
-  async openPaywallIfNeeded(): Promise<void> {
+  async openPaywallIfNeeded(userId?: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      // For web, always show the checkout since we can't check entitlements
+      await this.openPaywall(userId);
+      return;
+    }
+
     if (!this.isNativeAvailable) {
       this.showNativeRequiredAlert();
       return;
@@ -341,7 +421,7 @@ export class RevenueCatService {
 
   // Utility method to check if RevenueCat is properly configured
   isConfigured(): boolean {
-    return !!this.config.apiKey && this.isNativeAvailable;
+    return !!this.config.apiKey && (this.isNativeAvailable || Platform.OS === 'web');
   }
 
   // Get configuration for debugging
