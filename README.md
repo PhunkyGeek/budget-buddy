@@ -92,6 +92,10 @@ Upgrade to unlock:
 * **Priority Support**
   Faster responses and dedicated help for Pro users.
 
+* **Test Pro Features Account**
+  email: thesurgemedia22@gmail.com
+  password: Budget2025
+
 ---
 
 ## 🛠️ Setup & Installation

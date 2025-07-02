@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { supabase } from './supabaseService';
 
 export interface CheckoutSessionResponse {
@@ -62,6 +63,45 @@ export class StripeService {
     }
   }
 
+  async createSubscriptionCheckoutSession(userId: string, stripeProductId: string, callbackOrigin?: string): Promise<CheckoutSessionResponse> {
+    try {
+      // Determine callback origin if not provided
+      let origin = callbackOrigin;
+      if (!origin) {
+        if (Platform.OS === 'web') {
+          origin = typeof window !== 'undefined' ? window.location.origin : 'https://budget-budddy.netlify.app';
+        } else {
+          // For mobile, always use the production URL as it needs to be web-accessible
+          origin = 'https://budget-budddy.netlify.app';
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('stripe-create-subscription-session', {
+        body: {
+          userId,
+          stripeProductId,
+          callbackOrigin: origin
+        }
+      });
+
+      if (error) {
+        console.error('Error creating subscription checkout session:', error);
+        return {
+          success: false,
+          error: error.message || 'Failed to create subscription checkout session'
+        };
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Stripe subscription service error:', error);
+      return {
+        success: false,
+        error: 'Network error occurred'
+      };
+    }
+  }
+
   async processPayment(sessionUrl: string): Promise<PaymentResult> {
     if (Platform.OS === 'web') {
       return this.processWebPayment(sessionUrl);
@@ -92,11 +132,15 @@ export class StripeService {
 
   private async processMobilePayment(sessionUrl: string): Promise<PaymentResult> {
     try {
+      // Create the proper deep link URL for the mobile app
+      const redirectUrl = Linking.createURL('/stripe-callback');
+      
+      console.log('Mobile payment redirect URL:', redirectUrl);
+
       // For mobile, use WebBrowser to open Stripe Checkout
-      // The callback will redirect to the Netlify URL which can then deep link back to the app
       const result = await WebBrowser.openAuthSessionAsync(
         sessionUrl,
-        'https://budget-budddy.netlify.app/stripe-callback'
+        redirectUrl
       );
 
       if (result.type === 'success') {

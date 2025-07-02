@@ -1,10 +1,12 @@
 import { Platform, Linking, Alert } from 'react-native';
+import { stripeService } from './stripeService';
 
 export interface RevenueCatConfig {
   apiKey: string;
   entitlementId: string;
   productId: string;
   sandboxUrl: string;
+  stripeProductId: string;
 }
 
 export class RevenueCatService {
@@ -17,6 +19,7 @@ export class RevenueCatService {
       entitlementId: 'pro',
       productId: 'Budget_Buddy_Pro_Annual',
       sandboxUrl: 'https://pay.rev.cat/sandbox/xlzleojzacamrxqw/',
+      stripeProductId: 'prod_SZ1In28QIIPWFZ',
     };
     
     // Check if we're in a native environment where RevenueCat can work
@@ -35,57 +38,78 @@ export class RevenueCatService {
   }
 
   async openPaywall(userId?: string): Promise<void> {
-    // Web platform - use RevenueCat web checkout
+    // Web platform - use Stripe for subscriptions
     if (Platform.OS === 'web') {
       if (!userId) {
         Alert.alert(
           'User Required',
-          'A user ID is required for web checkout. Please ensure you are logged in.',
+          'A user ID is required for checkout. Please ensure you are logged in.',
           [{ text: 'OK' }]
         );
         return;
       }
 
       try {
-        const checkoutUrl = `${this.config.sandboxUrl}${userId}`;
-        
-        Alert.alert(
-          'Upgrade to Pro',
-          'You will be redirected to RevenueCat\'s secure checkout page to complete your Pro upgrade.',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel'
-            },
-            {
-              text: 'Continue',
-              onPress: async () => {
-                try {
-                  await Linking.openURL(checkoutUrl);
-                } catch (error) {
-                  console.error('Error opening checkout URL:', error);
-                  Alert.alert(
-                    'Error',
-                    'Unable to open checkout page. Please try again later.',
-                    [{ text: 'OK' }]
-                  );
+        // Check if Stripe is configured
+        if (!stripeService.isConfigured()) {
+          // Fallback to RevenueCat web checkout
+          const checkoutUrl = `${this.config.sandboxUrl}${userId}`;
+          
+          Alert.alert(
+            'Upgrade to Pro',
+            'You will be redirected to RevenueCat\'s secure checkout page to complete your Pro upgrade.',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              },
+              {
+                text: 'Continue',
+                onPress: async () => {
+                  try {
+                    await Linking.openURL(checkoutUrl);
+                  } catch (error) {
+                    console.error('Error opening checkout URL:', error);
+                    Alert.alert(
+                      'Error',
+                      'Unable to open checkout page. Please try again later.',
+                      [{ text: 'OK' }]
+                    );
+                  }
                 }
               }
-            }
-          ]
+            ]
+          );
+          return;
+        }
+
+        // Use Stripe for web subscriptions
+        const callbackOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://budget-budddy.netlify.app';
+        const checkoutResponse = await stripeService.createSubscriptionCheckoutSession(
+          userId,
+          this.config.stripeProductId,
+          callbackOrigin
         );
+
+        if (!checkoutResponse.success || !checkoutResponse.sessionUrl) {
+          throw new Error(checkoutResponse.error || 'Failed to create checkout session');
+        }
+
+        // Redirect to Stripe Checkout
+        await stripeService.processPayment(checkoutResponse.sessionUrl);
+
       } catch (error) {
-        console.error('Error preparing web checkout:', error);
+        console.error('Error with web subscription checkout:', error);
         Alert.alert(
-          'Error',
-          'Unable to prepare checkout. Please try again later.',
+          'Checkout Error',
+          'Unable to open checkout page. Please try again later.',
           [{ text: 'OK' }]
         );
       }
       return;
     }
 
-    // Native platforms
+    // Native platforms - use RevenueCat
     if (!this.isNativeAvailable) {
       this.showNativeRequiredAlert();
       return;
@@ -374,7 +398,7 @@ export class RevenueCatService {
   private showNativeRequiredAlert(): void {
     Alert.alert(
       'Native Build Required',
-      'RevenueCat requires a native build to function properly. To test in-app purchases:\n\n1. Export your Expo project\n2. Set up a local development environment\n3. Install react-native-purchases and react-native-purchases-ui\n4. Create a development build using Expo Dev Client\n5. Test on a physical device\n\nFor now, we\'ll simulate the purchase flow.',
+      'RevenueCat requires a native build to function properly. To test in-app purchases:\n\n1. Export your Expo project\n2. Set up a local development environment\n3. Install react-native-purchases and react-native-purchases-ui\n4. Create a development build using Expo Dev Client\n5. Test on a physical device\n\nFor web users, we use Stripe for subscription management.',
       [
         {
           text: 'Learn More',
@@ -399,7 +423,7 @@ export class RevenueCatService {
   private simulatePurchase(): void {
     Alert.alert(
       'Purchase Simulation',
-      'In this demo, we\'re simulating a successful Pro upgrade. In a real app with native build, this would:\n\n1. Display your "Budget Buddy" paywall from RevenueCat dashboard\n2. Process the actual purchase through App Store/Google Play\n3. Update the user\'s subscription status\n4. Grant access to Pro features',
+      'In this demo, we\'re simulating a successful Pro upgrade. In a real app:\n\n• Web users: Stripe handles subscription billing\n• Mobile users: RevenueCat handles App Store/Google Play billing\n• Both platforms update subscription status in your database',
       [
         {
           text: 'Simulate Success',
