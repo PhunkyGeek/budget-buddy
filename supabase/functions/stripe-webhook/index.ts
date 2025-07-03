@@ -1,3 +1,9 @@
+/*
+  # Stripe Webhook Handler Edge Function
+
+  This function handles Stripe webhooks to update wallet balances
+  and subscription statuses when payments are completed successfully.
+*/
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const encoder = new TextEncoder();
@@ -7,7 +13,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 function parseStripeSignature(header) {
-  return header.split(',').reduce((acc, item)=>{
+  return header.split(',').reduce((acc, item) => {
     const [key, value] = item.split('=');
     acc[key] = value;
     return acc;
@@ -21,14 +27,12 @@ async function verifySignature(payload, header, secret) {
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), {
     name: 'HMAC',
     hash: 'SHA-256'
-  }, false, [
-    'sign'
-  ]);
+  }, false, ['sign']);
   const signatureArrayBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
-  const signatureHex = Array.from(new Uint8Array(signatureArrayBuffer)).map((b)=>b.toString(16).padStart(2, '0')).join('');
+  const signatureHex = Array.from(new Uint8Array(signatureArrayBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
   return signatureHex === expectedSig;
 }
-serve(async (req)=>{
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: corsHeaders
@@ -53,16 +57,21 @@ serve(async (req)=>{
     }
     const event = JSON.parse(body);
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
-    switch(event.type){
+    switch (event.type) {
       case 'checkout.session.completed':
         {
           const session = event.data.object;
           const userId = session.metadata?.userId;
           const purpose = session.metadata?.purpose;
           if (!userId || session.payment_status !== 'paid') break;
+
           if (purpose === 'wallet_topup') {
             const amount = parseFloat(session.metadata.amount);
-            const { data: wallet, error: fetchError } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
+            const { data: wallet, error: fetchError } = await supabase
+              .from('wallets')
+              .select('balance')
+              .eq('user_id', userId)
+              .single();
             if (fetchError || !wallet) {
               console.error('Error fetching wallet:', fetchError);
               return new Response('Wallet fetch failed', {
@@ -71,16 +80,32 @@ serve(async (req)=>{
               });
             }
             const newBalance = parseFloat(wallet.balance) + amount;
-            const { error } = await supabase.from('wallets').update({
-              balance: newBalance
-            }).eq('user_id', userId);
-            if (error) {
+            const { error: updateError } = await supabase
+              .from('wallets')
+              .update({ balance: newBalance })
+              .eq('user_id', userId);
+            if (updateError) {
               return new Response('Wallet update failed', {
                 status: 500,
                 headers: corsHeaders
               });
             }
+
+            // ✅ Insert wallet transaction record
+            const { error: insertError } = await supabase
+              .from('wallet_transactions')
+              .insert({
+                user_id: userId,
+                transaction_type: 'add',
+                amount,
+                description: 'Wallet top-up via Stripe checkout',
+                timestamp: new Date().toISOString(),
+              });
+            if (insertError) {
+              console.error('Error inserting wallet transaction:', insertError);
+            }
           }
+
           if (purpose === 'subscription') {
             const { error } = await supabase.from('user_profiles').update({
               subscription_status: 'pro'
