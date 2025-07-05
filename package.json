@@ -10,7 +10,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export -p web && cp _redirects web-build/",
+    "build:web": "expo export -p web && cp _redirects dist/",
     "lint": "expo lint"
   },
   "dependencies": {
