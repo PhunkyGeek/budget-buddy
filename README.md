@@ -29,7 +29,7 @@ Built for the [Bolt.new Hackathon](https://bolt.new), this project addresses cha
 | 💎 Pro Features      | Unlock exclusive tools via RevenueCat                              |
 | 🧩 Modular UI        | Reusable components and cards throughout the app                   |
 
-> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption (I didn't get the Get 3 months of ElevenLabs Creator Tier free which includes 100k credits/month, pro voice cloning due IP address issues) So I had to use multiple free tier accounts for testing. Second elevenLabs account email: thesurgemedia22@gmail.com
+> ⚠️ Note: Voice command actions is currently free for app-testing, mind usage to avoid voice service interruption (I didn't get the Get 3 months of ElevenLabs Creator Tier free which includes 100k credits/month, pro voice cloning due IP address issues) So I had to use multiple free tier accounts for voice command testing. Second elevenLabs account email: thesurgemedia22@gmail.com
 
 ---
 

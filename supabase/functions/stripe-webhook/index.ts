@@ -58,96 +58,130 @@ serve(async (req) => {
     const event = JSON.parse(body);
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     switch (event.type) {
-      case 'checkout.session.completed':
-        {
-          const session = event.data.object;
-          const userId = session.metadata?.userId;
-          const purpose = session.metadata?.purpose;
-          if (!userId || session.payment_status !== 'paid') break;
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const userId = session.metadata?.userId;
+        const purpose = session.metadata?.purpose;
+        if (!userId || session.payment_status !== 'paid') break;
 
-          if (purpose === 'wallet_topup') {
-            const amount = parseFloat(session.metadata.amount);
-            const { data: wallet, error: fetchError } = await supabase
-              .from('wallets')
-              .select('balance')
-              .eq('user_id', userId)
-              .single();
-            if (fetchError || !wallet) {
-              console.error('Error fetching wallet:', fetchError);
-              return new Response('Wallet fetch failed', {
-                status: 500,
-                headers: corsHeaders
-              });
-            }
-            const newBalance = parseFloat(wallet.balance) + amount;
-            const { error: updateError } = await supabase
-              .from('wallets')
-              .update({ balance: newBalance })
-              .eq('user_id', userId);
-            if (updateError) {
-              return new Response('Wallet update failed', {
-                status: 500,
-                headers: corsHeaders
-              });
-            }
-
-            // ✅ Insert wallet transaction record
-            const { error: insertError } = await supabase
-              .from('wallet_transactions')
-              .insert({
-                user_id: userId,
-                transaction_type: 'add',
-                amount,
-                description: 'Wallet top-up via Stripe checkout',
-                timestamp: new Date().toISOString(),
-              });
-            if (insertError) {
-              console.error('Error inserting wallet transaction:', insertError);
-            }
+        if (purpose === 'wallet_topup') {
+          const amount = parseFloat(session.metadata.amount);
+          const { data: wallet, error: fetchError } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', userId)
+            .single();
+          if (fetchError || !wallet) {
+            console.error('Error fetching wallet:', fetchError);
+            return new Response('Wallet fetch failed', {
+              status: 500,
+              headers: corsHeaders,
+            });
+          }
+          const newBalance = parseFloat(wallet.balance) + amount;
+          const { error: updateError } = await supabase
+            .from('wallets')
+            .update({ balance: newBalance })
+            .eq('user_id', userId);
+          if (updateError) {
+            return new Response('Wallet update failed', {
+              status: 500,
+              headers: corsHeaders,
+            });
           }
 
-          if (purpose === 'subscription') {
-            const { error } = await supabase.from('user_profiles').update({
-              subscription_status: 'pro'
-            }).eq('user_id', userId);
-            if (error) {
-              return new Response('Subscription update failed', {
-                status: 500,
-                headers: corsHeaders
-              });
-            }
+          // ✅ Insert wallet transaction record
+          const { error: insertError } = await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: userId,
+              transaction_type: 'add',
+              amount,
+              description: 'Wallet top-up via Stripe checkout',
+              timestamp: new Date().toISOString(),
+            });
+          if (insertError) {
+            console.error('Error inserting wallet transaction:', insertError);
           }
-          break;
         }
-      case 'customer.subscription.updated':
-        {
-          const sub = event.data.object;
-          const userId = sub.metadata?.userId;
-          const status = sub.status === 'active' ? 'pro' : 'free';
-          if (userId) {
-            await supabase.from('user_profiles').update({
-              subscription_status: status
-            }).eq('user_id', userId);
+
+        if (purpose === 'subscription') {
+          const { error } = await supabase
+            .from('user_profiles')
+            .update({
+              subscription_status: 'pro',
+            })
+            .eq('user_id', userId);
+          if (error) {
+            return new Response('Subscription update failed', {
+              status: 500,
+              headers: corsHeaders,
+            });
           }
-          break;
         }
-      case 'customer.subscription.deleted':
-        {
-          const sub = event.data.object;
-          const userId = sub.metadata?.userId;
-          if (userId) {
-            await supabase.from('user_profiles').update({
-              subscription_status: 'free'
-            }).eq('user_id', userId);
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const userId = sub.metadata?.userId;
+        const status = sub.status === 'active' ? 'pro' : 'free';
+        if (userId) {
+          await supabase
+            .from('user_profiles')
+            .update({
+              subscription_status: status,
+            })
+            .eq('user_id', userId);
+        }
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const userId = sub.metadata?.userId;
+        if (userId) {
+          await supabase
+            .from('user_profiles')
+            .update({
+              subscription_status: 'free',
+            })
+            .eq('user_id', userId);
+        }
+        break;
+      }
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+        const metadata = paymentIntent.metadata || {};
+        const userId = metadata.userId;
+        const amount = parseFloat(metadata.amount || '0');
+
+        if (userId && amount > 0) {
+          const { error: insertError } = await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: userId,
+              transaction_type: 'add', // still an "add" attempt
+              amount,
+              description: `Failed wallet top-up: ${
+                paymentIntent.last_payment_error?.message || 'Unknown error'
+              }`,
+              timestamp: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            console.error(
+              'Error inserting failed wallet transaction:',
+              insertError
+            );
           }
-          break;
         }
-      case 'payment_intent.payment_failed':
-        {
-          const paymentIntent = event.data.object;
-          console.log('Payment failed:', paymentIntent.id);
-          break;
-        }
+
+        console.log(
+          'Payment failed:',
+          paymentIntent.id,
+          paymentIntent.last_payment_error?.message
+        );
+        break;
+      }
       default:
         console.log('Unhandled event type:', event.type);
     }
