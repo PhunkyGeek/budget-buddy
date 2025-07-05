@@ -1,0 +1,13 @@
+[build]
+  publish = "dist"
+  command = "expo export -p web"
+
+[[redirects]]
+  from = "/auth/callback"
+  to = "/"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
