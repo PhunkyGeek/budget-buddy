@@ -1,22 +1,40 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { handleOAuthCallback } from '@/services/supabaseService';
+import { supabase } from '@/services/supabaseService';
 
 export default function AuthCallbackScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams();
 
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // Reconstruct the URL with all parameters
-        const url = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
-        
-        await handleOAuthCallback(url);
-        router.replace('/(tabs)');
+        // Extract parameters from URL hash
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          // Set the session with Supabase
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            console.error('Error setting session:', error.message);
+            router.replace('/auth');
+          } else {
+            console.log('Session set successfully:', data.user);
+            router.replace('/(tabs)');
+          }
+        } else {
+          console.error('No access token or refresh token found in callback');
+          router.replace('/auth');
+        }
       } catch (error) {
         console.error('OAuth callback error:', error);
         router.replace('/auth');
@@ -24,7 +42,7 @@ export default function AuthCallbackScreen() {
     };
 
     processCallback();
-  }, [params, router]);
+  }, [router]);
 
   const styles = StyleSheet.create({
     container: {

@@ -18,64 +18,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) {
-        // Check if the error is "no rows found" (PGRST116)
-        if (error.code === 'PGRST116' || error.message.includes('no rows')) {
-          console.log('No profile found, creating new profile...');
-          
-          // Extract user information
-          const firstName = user.user_metadata?.first_name || 
-                           user.user_metadata?.given_name || 
-                           user.user_metadata?.name?.split(' ')[0] || 
-                           'User';
-          const lastName = user.user_metadata?.last_name || 
-                          user.user_metadata?.family_name || 
-                          user.user_metadata?.name?.split(' ').slice(1).join(' ') || 
-                          '';
-          const email = user.email || '';
-
-          // Create the profile
-          const newProfile = await createProfile(user.id, firstName, lastName, email);
-          setProfile(newProfile);
-          console.log('Profile created successfully:', newProfile);
-        } else {
-          throw error;
-        }
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error in refreshProfile:', error);
-    }
-  };
-
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    // Get initial session and set up auth state listener
+    const getInitialSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('Error getting session:', error);
+        console.error('Error getting initial session:', error);
       } else {
         setUser(session?.user ?? null);
       }
       setLoading(false);
-    });
+    };
 
-    // Listen for auth changes
+    getInitialSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
-        setLoading(false);
+        setLoading(false); // Ensure loading is false after state change
       }
     );
 
@@ -90,19 +51,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const refreshProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116' || error.message.includes('no rows')) {
+          console.log('No profile found, creating new profile...');
+          const firstName = user.user_metadata?.first_name || user.user_metadata?.given_name || user.user_metadata?.name?.split(' ')[0] || 'User';
+          const lastName = user.user_metadata?.last_name || user.user_metadata?.family_name || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '';
+          const email = user.email || '';
+
+          const newProfile = await createProfile(user.id, firstName, lastName, email);
+          setProfile(newProfile);
+          console.log('Profile created successfully:', newProfile);
+        } else {
+          throw error;
+        }
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in refreshProfile:', error);
+    }
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      profile,
-      loading,
-      signOut,
-      refreshProfile,
-    }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

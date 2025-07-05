@@ -61,6 +61,13 @@ export const handleOAuthCallback = async (url: string) => {
   const { data, error } = await supabase.auth.getSessionFromUrl(url);
   
   if (error) throw error;
+
+  // Set the session to ensure AuthContext updates
+  if (data.session) {
+    const { error: setError } = await supabase.auth.setSession(data.session);
+    if (setError) throw setError;
+  }
+
   return data;
 };
 

@@ -14,10 +14,11 @@ export default function Index() {
       if (user) {
         router.replace('/(tabs)');
       } else {
+        // Only redirect to /auth if not loading and no user, avoiding infinite loop
         router.replace('/auth');
       }
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   const styles = StyleSheet.create({
     container: {
