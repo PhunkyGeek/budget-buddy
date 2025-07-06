@@ -59,6 +59,7 @@ export default function HomeScreen() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showAddOptionsModal, setShowAddOptionsModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Ref for horizontal scroll view
   const expensesScrollViewRef = useRef<ScrollView>(null);
@@ -78,7 +79,7 @@ export default function HomeScreen() {
         setTimeout(() => setShowTutorial(true), 1000);
       }
     }
-  }, [user, profile]);
+  }, [user, profile, refreshTrigger]);
 
   const loadData = async () => {
     if (!user) return;
