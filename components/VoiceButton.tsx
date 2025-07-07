@@ -8,7 +8,7 @@ import { voiceService } from '@/services/voiceService';
 
 interface VoiceButtonProps {
   onPress?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: () => void; // Callback to trigger reload, passed from HomeScreen
   disabled?: boolean;
 }
 
@@ -77,18 +77,7 @@ export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButto
             const response = await voiceService.processVoiceCommand(simulatedText, user.id);
             
             if (response.success) {
-              Alert.alert(
-                'Voice Command Processed',
-                `Command: "${simulatedText}"\n\n${response.message}`,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      onSuccess?.();
-                    }
-                  }
-                ]
-              );
+              onSuccess?.(); // Trigger reload on success
             } else {
               Alert.alert(
                 'Voice Command Failed',
@@ -112,6 +101,8 @@ export function VoiceButton({ onPress, onSuccess, disabled = false }: VoiceButto
         await startRecording();
       } else {
         await stopRecording();
+        // Trigger reload after stopping recording, assuming processing is complete
+        onSuccess?.();
       }
     }
   };

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { Platform, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,52 +34,60 @@ interface ConversationalAIContextType {
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
   speak?: (text: string) => Promise<void>;
+  onSuccess?: () => void; // Add onSuccess callback
 }
 
-const ConversationalAIContext = createContext<ConversationalAIContextType | undefined>(undefined);
+const ConversationalAIContext = createContext<
+  ConversationalAIContextType | undefined
+>(undefined);
 
 interface ConversationalAIProviderProps {
   children: React.ReactNode;
+  onSuccess?: () => void; // Accept onSuccess from parent
 }
 
-export function ConversationalAIProvider({ children }: ConversationalAIProviderProps) {
+export function ConversationalAIProvider({
+  children,
+  onSuccess,
+}: ConversationalAIProviderProps) {
   const { user } = useAuth();
-  const { onVoiceCommandSuccess } = useVoiceCommandSuccess();
-  
+  const { triggerSuccess } = useVoiceCommandSuccess();
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | undefined>();
 
   // Initialize ElevenLabs conversation hook for web only
-  const conversation = Platform.OS === 'web' && useConversation ? useConversation({
-    onConnect: () => {
-      console.log('Connected to ElevenLabs Conversational AI');
-    },
-    onDisconnect: () => {
-      console.log('Disconnected from ElevenLabs Conversational AI');
-    },
-    onMessage: async (message: any) => {
-      console.log('Received message from AI:', message);
-      if (message.role === 'user' && message.content) {
-        await handleTranscription(message.content);
-      }
-    },
-    onError: (error: any) => {
-      console.error('ElevenLabs AI Error:', error);
-      setIsProcessing(false);
-    },
-  }) : null;
+  const conversation =
+    Platform.OS === 'web' && useConversation
+      ? useConversation({
+          onConnect: () => {
+            console.log('Connected to ElevenLabs Conversational AI');
+          },
+          onDisconnect: () => {
+            console.log('Disconnected from ElevenLabs Conversational AI');
+          },
+          onMessage: async (message: any) => {
+            console.log('Received message from AI:', message);
+            if (message.role === 'user' && message.content) {
+              await handleTranscription(message.content);
+            }
+          },
+          onError: (error: any) => {
+            console.error('ElevenLabs AI Error:', error);
+            setIsProcessing(false);
+          },
+        })
+      : null;
 
   useEffect(() => {
-    // Check if ElevenLabs is available and configured for web
     const agentId = process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID;
     const apiKey = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
-    
+
     if (Platform.OS === 'web') {
       setIsAvailable(!!useConversation && !!agentId && !!apiKey);
     } else {
-      // For mobile, always available since we use expo-av
       setIsAvailable(true);
     }
   }, []);
@@ -85,49 +99,28 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
 
     try {
       console.log('Processing voice command:', transcribedText);
-      const response = await voiceService.processVoiceCommand(transcribedText, user.id);
-      
+      const response = await voiceService.processVoiceCommand(
+        transcribedText,
+        user.id
+      );
+
       if (response.success) {
-        // Play audio response if available
+        console.log('Command succeeded, triggering onSuccess');
         if (response.audioResponse) {
           try {
             if (Platform.OS === 'web' && conversation?.speak) {
               await conversation.speak(response.audioResponse);
-            } else if (Platform.OS !== 'web') {
-              // For mobile, we could implement text-to-speech here if needed
-              // For now, we'll just show the text response
             }
           } catch (error) {
             console.error('Error playing audio response:', error);
           }
         }
-
-        Alert.alert(
-          'Voice Command Processed',
-          `Command: "${transcribedText}"\n\n${response.message}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                onVoiceCommandSuccess();
-              }
-            }
-          ]
-        );
+        onSuccess?.(); // Call onSuccess after success
       } else {
-        Alert.alert(
-          'Voice Command Failed',
-          response.message,
-          [{ text: 'OK' }]
-        );
+        console.log('Voice command failed:', response.message);
       }
     } catch (error) {
       console.error('Voice command error:', error);
-      Alert.alert(
-        'Voice Command Error',
-        'Sorry, there was an error processing your voice command. Please try again.',
-        [{ text: 'OK' }]
-      );
     } finally {
       setIsProcessing(false);
     }
@@ -144,7 +137,6 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
         throw new Error('Agent ID not configured');
       }
 
-      // Request microphone permission for web
       if (Platform.OS === 'web') {
         try {
           await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -167,16 +159,16 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
             console.log('Processing voice command:', command);
             await handleTranscription(command);
           },
-          "App-action": async ({ 
-            actionType, 
-            amount, 
-            category, 
-            source 
-          }: { 
-            actionType: string; 
-            amount: number; 
-            category?: string; 
-            source?: string; 
+          'App-action': async ({
+            actionType,
+            amount,
+            category,
+            source,
+          }: {
+            actionType: string;
+            amount: number;
+            category?: string;
+            source?: string;
           }) => {
             if (!user) {
               throw new Error('User not authenticated');
@@ -192,69 +184,102 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
               switch (actionType) {
                 case 'add_expense':
                   if (!category || !amount) {
-                    throw new Error('Category and amount are required for expenses');
+                    throw new Error(
+                      'Category and amount are required for expenses'
+                    );
                   }
 
-                  // Get existing categories
-                  const categories = await supabaseService.getCategories(user.id);
-                  
-                  // Find existing category (case-insensitive)
+                  const categories = await supabaseService.getCategories(
+                    user.id
+                  );
                   let categoryId = categories.find(
-                    cat => cat.name.toLowerCase() === category.toLowerCase()
+                    (cat) => cat.name.toLowerCase() === category.toLowerCase()
                   )?.id;
 
-                  // Create custom category if not found
                   if (!categoryId) {
-                    const newCategory = await supabaseService.createCustomCategory(user.id, category);
+                    const newCategory =
+                      await supabaseService.createCustomCategory(
+                        user.id,
+                        category
+                      );
                     categoryId = newCategory.id;
                   }
 
-                  // Add expense
-                  await supabaseService.addExpense(user.id, categoryId, amount, currentDate);
-                  
-                  message = `Added $${amount.toFixed(2)} expense for ${category}.`;
-                  audioResponse = `Perfect! I've recorded your $${amount.toFixed(2)} expense for ${category}.`;
+                  await supabaseService.addExpense(
+                    user.id,
+                    categoryId,
+                    amount,
+                    currentDate
+                  );
+                  message = `Added $${amount.toFixed(
+                    2
+                  )} expense for ${category}.`;
+                  audioResponse = `Perfect! I've recorded your $${amount.toFixed(
+                    2
+                  )} expense for ${category}.`;
                   break;
 
                 case 'add_income':
                   if (!source || !amount) {
-                    throw new Error('Source and amount are required for income');
+                    throw new Error(
+                      'Source and amount are required for income'
+                    );
                   }
 
-                  // Get existing income sources
-                  const sources = await supabaseService.getIncomeSources(user.id);
-                  
-                  // Find existing source (case-insensitive)
+                  const sources = await supabaseService.getIncomeSources(
+                    user.id
+                  );
                   let sourceId = sources.find(
-                    src => src.name.toLowerCase() === source.toLowerCase()
+                    (src) => src.name.toLowerCase() === source.toLowerCase()
                   )?.id;
 
-                  // Create custom source if not found
                   if (!sourceId) {
-                    const newSource = await supabaseService.createCustomIncomeSource(user.id, source);
+                    const newSource =
+                      await supabaseService.createCustomIncomeSource(
+                        user.id,
+                        source
+                      );
                     sourceId = newSource.id;
                   }
 
-                  // Add income
-                  await supabaseService.addIncome(user.id, sourceId, amount, currentDate);
-                  
-                  message = `Added $${amount.toFixed(2)} from ${source} to your income.`;
-                  audioResponse = `Great! I've added $${amount.toFixed(2)} from ${source} to your income for today.`;
+                  await supabaseService.addIncome(
+                    user.id,
+                    sourceId,
+                    amount,
+                    currentDate
+                  );
+                  message = `Added $${amount.toFixed(
+                    2
+                  )} from ${source} to your income.`;
+                  audioResponse = `Great! I've added $${amount.toFixed(
+                    2
+                  )} from ${source} to your income for today.`;
                   break;
 
                 case 'show_budget':
-                  // Get budget statistics
-                  const budgetStats = await supabaseService.getBudgetStatistics(user.id);
-                  
-                  message = `Your budget summary: $${budgetStats.monthlyIncome.toFixed(2)} income, $${budgetStats.monthlyExpenses.toFixed(2)} expenses, $${(budgetStats.monthlyIncome - budgetStats.monthlyExpenses).toFixed(2)} remaining.`;
-                  audioResponse = `Here's your budget summary for this month. You have $${budgetStats.monthlyIncome.toFixed(2)} in income, you've spent $${budgetStats.monthlyExpenses.toFixed(2)}, leaving you with $${(budgetStats.monthlyIncome - budgetStats.monthlyExpenses).toFixed(2)} remaining.`;
+                  const budgetStats = await supabaseService.getBudgetStatistics(
+                    user.id
+                  );
+                  message = `Your budget summary: $${budgetStats.monthlyIncome.toFixed(
+                    2
+                  )} income, $${budgetStats.monthlyExpenses.toFixed(
+                    2
+                  )} expenses, $${(
+                    budgetStats.monthlyIncome - budgetStats.monthlyExpenses
+                  ).toFixed(2)} remaining.`;
+                  audioResponse = `Here's your budget summary for this month. You have $${budgetStats.monthlyIncome.toFixed(
+                    2
+                  )} in income, you've spent $${budgetStats.monthlyExpenses.toFixed(
+                    2
+                  )}, leaving you with $${(
+                    budgetStats.monthlyIncome - budgetStats.monthlyExpenses
+                  ).toFixed(2)} remaining.`;
                   break;
 
                 default:
                   throw new Error(`Unsupported action type: ${actionType}`);
               }
 
-              // Play audio response if available
               if (audioResponse && conversation?.speak) {
                 try {
                   await conversation.speak(audioResponse);
@@ -263,32 +288,15 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
                 }
               }
 
-              // Show success alert and trigger UI refresh
-              Alert.alert(
-                'Voice Command Processed',
-                message,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      onVoiceCommandSuccess();
-                    }
-                  }
-                ]
-              );
-
+              console.log('App-action succeeded, triggering onSuccess');
+              onSuccess?.(); // Call onSuccess after action
               return { success: true, message };
-
             } catch (error) {
               console.error('App-action error:', error);
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-              
-              Alert.alert(
-                'Voice Command Error',
-                `Sorry, I couldn't process that command: ${errorMessage}`,
-                [{ text: 'OK' }]
-              );
-
+              const errorMessage =
+                error instanceof Error
+                  ? error.message
+                  : 'Unknown error occurred';
               return { success: false, error: errorMessage };
             } finally {
               setIsProcessing(false);
@@ -300,7 +308,7 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
       console.error('Failed to start conversation:', error);
       throw error;
     }
-  }, [conversation, user, onVoiceCommandSuccess]);
+  }, [conversation, user, onSuccess]);
 
   const endConversation = useCallback(async () => {
     if (!conversation) {
@@ -317,12 +325,10 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
 
   const startRecording = useCallback(async () => {
     if (Platform.OS === 'web') {
-      // For web, delegate to ElevenLabs or simulation
       return;
     }
 
     try {
-      // Request microphone permissions
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
@@ -333,7 +339,6 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
         return;
       }
 
-      // Configure audio mode for recording
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -345,7 +350,7 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       setRecording(newRecording);
       setIsRecording(true);
       console.log('Recording started');
@@ -361,7 +366,6 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
 
   const stopRecording = useCallback(async () => {
     if (Platform.OS === 'web') {
-      // For web, delegate to ElevenLabs or simulation
       return;
     }
 
@@ -370,29 +374,19 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
     try {
       console.log('Stopping recording...');
       setIsRecording(false);
-      
+
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       setRecording(undefined);
-      
+
       console.log('Recording stopped, URI:', uri);
 
       if (uri) {
-        // For mobile, we simulate the processing since we don't have speech-to-text
-        try {
-          const simulatedText = await voiceService.simulateSpeechToText();
-          await handleTranscription(simulatedText);
-        } catch (error) {
-          console.error('Voice command processing error:', error);
-          Alert.alert(
-            'Voice Command Error',
-            'Sorry, there was an error processing your voice command. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
+        const simulatedText = await voiceService.simulateSpeechToText();
+        await handleTranscription(simulatedText);
+        onSuccess?.(); // Call onSuccess after processing
       }
 
-      // Reset audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
@@ -409,18 +403,20 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
         [{ text: 'OK' }]
       );
     }
-  }, [recording]);
+  }, [recording, onSuccess]);
 
-  const speak = useCallback(async (text: string) => {
-    if (Platform.OS === 'web' && conversation?.speak) {
-      try {
-        await conversation.speak(text);
-      } catch (error) {
-        console.error('Error with text-to-speech:', error);
+  const speak = useCallback(
+    async (text: string) => {
+      if (Platform.OS === 'web' && conversation?.speak) {
+        try {
+          await conversation.speak(text);
+        } catch (error) {
+          console.error('Error with text-to-speech:', error);
+        }
       }
-    }
-    // For mobile, we could implement text-to-speech here if needed
-  }, [conversation]);
+    },
+    [conversation]
+  );
 
   const contextValue: ConversationalAIContextType = {
     isAvailable,
@@ -432,6 +428,7 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
     startRecording,
     stopRecording,
     speak,
+    onSuccess, // Propagate onSuccess to context
   };
 
   return (
@@ -444,7 +441,9 @@ export function ConversationalAIProvider({ children }: ConversationalAIProviderP
 export function useConversationalAI() {
   const context = useContext(ConversationalAIContext);
   if (context === undefined) {
-    throw new Error('useConversationalAI must be used within a ConversationalAIProvider');
+    throw new Error(
+      'useConversationalAI must be used within a ConversationalAIProvider'
+    );
   }
   return context;
 }

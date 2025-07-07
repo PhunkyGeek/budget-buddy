@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AnimatedSplashScreen } from '@/components/AnimatedSplashScreen';
 import 'react-native-url-polyfill/auto';
+import { VoiceCommandSuccessProvider } from '@/contexts/VoiceCommandSuccessContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
@@ -46,7 +47,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppContent />
+        <VoiceCommandSuccessProvider onSuccess={() => {}}>
+          <AppContent />
+        </VoiceCommandSuccessProvider>
       </ThemeProvider>
     </AuthProvider>
   );
