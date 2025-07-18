@@ -9,6 +9,7 @@ import {
   Platform,
   Linking,
   Animated,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Settings, Bell, Shield, CreditCard, CircleHelp as HelpCircle, ChevronRight, Crown, LogOut, Zap } from 'lucide-react-native';
@@ -263,8 +264,7 @@ export default function AccountScreen() {
       justifyContent: 'center',
     },
     boltBadgeContainer: {
-      backgroundColor: '#000000',
-      borderRadius: 8,
+      borderRadius: 16,
       paddingHorizontal: 12,
       paddingVertical: 8,
       flexDirection: 'row',
@@ -275,7 +275,6 @@ export default function AccountScreen() {
       shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 5,
-      marginBottom: Platform.OS !== 'web' ? 30 : 30,
     },
     boltBadgeAnimated: {
       shadowColor: '#6366f1',
@@ -283,19 +282,6 @@ export default function AccountScreen() {
       shadowOpacity: 0.6,
       shadowRadius: 8,
       elevation: 10,
-    },
-    boltText: {
-      color: '#ffffff',
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    boltBrand: {
-      color: '#ffffff',
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    thunderboltIcon: {
-      marginLeft: 4,
     },
   });
 
@@ -319,6 +305,11 @@ export default function AccountScreen() {
       outputRange: [5, 10],
     }),
   };
+
+  // Determine badge image based on theme
+  const badgeImage = theme.background === '#ffffff' || theme.card === '#ffffff' 
+    ? require('@/assets/images/bolt-badge-black.png') // Black badge for light theme
+    : require('@/assets/images/bolt-badge-white.png'); // White badge for dark theme
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -408,11 +399,10 @@ export default function AccountScreen() {
                     }
                   ]}
                 >
-                  <Text style={styles.boltText}>Built with</Text>
-                  <Text style={styles.boltBrand}>Bolt</Text>
-                  <View style={styles.thunderboltIcon}>
-                    <Zap size={14} color="#ffffff" fill="#ffffff" />
-                  </View>
+                  <Image
+                    source={badgeImage}
+                    style={{ width: 130, height: 62, resizeMode: 'contain' }}
+                  />
                 </Animated.View>
               </TouchableOpacity>
             </View>
